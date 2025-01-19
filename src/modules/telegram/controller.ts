@@ -60,7 +60,7 @@ export class TelegramController {
           return
         }
 
-        const targetSource = sources.find((s) => s.id === chatId.toString())
+        const targetSource = sources.find((s) => s.id.toString() === chatId.toString())
         if (!targetSource) {
           this.logger.error("Failed to get target source:", event)
           return
