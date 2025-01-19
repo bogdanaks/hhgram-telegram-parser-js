@@ -4,15 +4,18 @@ import { SessionEntity, SessionService } from "modules/tg-session"
 import * as path from "path"
 import * as fs from "fs"
 import { input, sleep } from "shared/utils"
-import { TelegramClient } from "telegram"
+import { Api, TelegramClient } from "telegram"
 import { FloodWaitError, RPCError } from "telegram/errors"
 import { LogLevel } from "telegram/extensions/Logger"
 import { StoreSession } from "telegram/sessions"
 import { Logger } from "winston"
+import { SourceService } from "modules/source"
+import { TelegramService } from "./service"
 
 interface Props {
   logger: Logger
   sessionService: SessionService
+  sourceService: SourceService
 }
 
 const rootDir = process.cwd()
@@ -25,6 +28,7 @@ if (!fs.existsSync(sessionsDir)) {
 export class TelegramClientProvider {
   public client: TelegramClient
   public activeSession: SessionEntity
+  private sourceService: SourceService
   private sessions: SessionEntity[] = []
   private logger
   private sessionService
@@ -34,6 +38,7 @@ export class TelegramClientProvider {
   constructor(opts: Props) {
     this.logger = opts.logger
     this.sessionService = opts.sessionService
+    this.sourceService = opts.sourceService
   }
 
   public async _initSessionFiles() {
@@ -48,6 +53,35 @@ export class TelegramClientProvider {
       this.activeSession = session
       this.createClient()
       await this.connect()
+    }
+  }
+
+  public async _joinToSources() {
+    this.sessions = await this.sessionService.findBy({
+      is_active: true,
+    })
+    if (!this.sessions.length) {
+      throw new Error("No active sessions found")
+    }
+
+    const sources = await this.sourceService.findBy({ where: { is_active: true } })
+    for (const session of this.sessions) {
+      this.activeSession = session
+      this.createClient()
+      await this.connect()
+
+      for (const source of sources) {
+        try {
+          this.logger.info(`Joining to source: ${source.username}`)
+          await this.client.invoke(
+            new Api.channels.JoinChannel({
+              channel: source.username,
+            })
+          )
+        } catch (err) {
+          this.logger.error("Failed to join to source:", err)
+        }
+      }
     }
   }
 
