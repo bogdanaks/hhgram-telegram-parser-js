@@ -9,7 +9,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 sh 'cp /opt/hhgram/telegram-parser-js/.env /var/lib/jenkins/workspace/hhgram-telegram-parser-js/'
-                sh 'cp /opt/hhgram/telegram-parser-js/sessions /var/lib/jenkins/workspace/hhgram-telegram-parser-js/sessions'
+                sh 'cp -r /opt/hhgram/telegram-parser-js/sessions /var/lib/jenkins/workspace/hhgram-telegram-parser-js/sessions'
             }
         }
         stage('Run docker-compose') {
