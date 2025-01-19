@@ -36,89 +36,19 @@ export class TelegramClientProvider {
     this.sessionService = opts.sessionService
   }
 
-  public async _testSendCode() {
-    try {
-      // this.sessions = await this.sessionService.findBy({
-      //   is_active: true,
-      //   session_name: "2348100459335",
-      // })
-      // if (!this.sessions.length) {
-      //   throw new Error("No active sessions found")
-      // }
-
-      // const validSession = this.sessions.find(
-      //   (session) => session.is_active && session.request_count < this.maxRequestCount
-      // )
-
-      // if (!validSession) {
-      //   throw new Error("No one valid session found")
-      // }
-
-      // this.activeSession = validSession
-
-      const sessionName = "2348100459335"
-      const sessionFirstName = "Luc Tapia"
-
-      this.logger.info(`Creating telegram client for session [${sessionName}] ${sessionFirstName}`)
-      const client = new TelegramClient(
-        new StoreSession(sessionName),
-        config.telegram.apiId,
-        config.telegram.apiHash,
-        {
-          connectionRetries: 3,
-          requestRetries: 3,
-          autoReconnect: true,
-          useIPV6: true,
-        }
-      )
-      client.setLogLevel(LogLevel.DEBUG)
-      await client.connect()
-      await client.start({
-        phoneNumber: "2348100459335",
-        password: async () => "A737101298te",
-        phoneCode: async () => await input("Please enter the code you received: "),
-        forceSMS: false,
-        onError: (err) => {
-          this.logger.error("Failed to start Telegram:", err)
-        },
-      })
-
-      // console.log("resultCode", result)
-
-      // const resultSignIn = await this.client.invoke(
-      //   new Api.auth.SignIn({
-      //     phoneNumber: validSession.phone,
-      //     phoneCodeHash: result.phoneCodeHash,
-      //     // phoneCode: "some string here",
-      //   })
-      // )
-
-      // console.log("resultSignIn", resultSignIn)
-    } catch (err) {
-      this.logger.error("Failed to send code", err)
-    }
-  }
-
   public async _initSessionFiles() {
     this.sessions = await this.sessionService.findBy({
       is_active: true,
-      session_name: "2348100459335",
     })
     if (!this.sessions.length) {
       throw new Error("No active sessions found")
     }
 
-    const validSession = this.sessions.find(
-      (session) => session.is_active && session.request_count < this.maxRequestCount
-    )
-
-    if (!validSession) {
-      throw new Error("No one valid session found")
+    for (const session of this.sessions) {
+      this.activeSession = session
+      this.createClient()
+      await this.connect()
     }
-
-    this.activeSession = validSession
-    this.createClient()
-    await this.connect()
   }
 
   public async initialize() {
