@@ -1,0 +1,12 @@
+services:
+  telegram-parser-js:
+    build:
+      context: .
+    env_file:
+      - .env
+    networks:
+      - hhgram-server_app-network
+
+networks:
+  hhgram-server_app-network:
+    external: true

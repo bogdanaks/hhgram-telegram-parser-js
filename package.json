@@ -1,0 +1,34 @@
+{
+  "name": "telegram-parser-js",
+  "version": "1.0.0",
+  "main": "./dist/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx ./src/app.ts",
+    "dev": "tsx watch ./src/app.ts",
+    "lt": "npx localtunnel --port 5000",
+    "encrypt": "tsx ./src/shared/crypto/encrypt.ts",
+    "decrypt": "tsx ./src/shared/crypto/decrypt.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "awilix": "^12.0.4",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.7",
+    "fastest-levenshtein": "^1.0.16",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
+    "telegram": "^2.26.16",
+    "typeorm": "^0.3.20",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "reflect-metadata": "^0.2.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

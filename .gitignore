@@ -1,0 +1,6 @@
+.env
+.vscode
+*.pkl
+logs
+sessions
+node_modules
