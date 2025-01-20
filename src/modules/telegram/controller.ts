@@ -38,7 +38,9 @@ export class TelegramController {
   async monitoringMessages() {
     try {
       this.logger.info("Start monitoring messages...")
-      const sources = await this.sourceService.findBy({ where: { is_active: true } })
+      const sources = await this.sourceService.findBy({
+        where: { is_active: true, is_seeded: true },
+      })
       const sourceIds = sources.map((source) => source.id).join(", ")
       this.logger.info(`Found sources for monitoring: ${sourceIds}`)
 
@@ -77,18 +79,14 @@ export class TelegramController {
     try {
       this.logger.info("Start seeding data...")
 
-      // !1089317451 || QA — вакансии || @qa_jobs || parsed
-      // !1420354620 || QA — резюме || @qa_resumes || parsed
-      // !1454158341 || Работа в геймдеве (вакансии) || @rabota_v_gamedeve || parsed
-      // !1134745498 || Devops Jobs — вакансии и резюме || @devops_jobs_feed || parsed
-      // !1102268569 || Вакансии Backend/Frontend || @fordev || parsed
-      // !1101692370 || Вакансии SMM и Digital || @dnative_job || parsed
-      // !1621569402 || NodeJS Jobs канал вакансий и резюме || @nodejsjobsfeed || parsed
-      // !1050008285 || JavaScript Jobs — чат || @javascript_jobs || processing
-      // 1262748732 || Топ IT Вакансии {Разработка | DevOps | QA | Management} || @jobGeeks || processing
-      // 1336250861 || IT Jobs | Вакансии в IT || @devs_it || processing
+      const sources = await this.sourceService.findBy({
+        where: { is_active: true, is_seeded: false },
+      })
 
-      const sources = await this.sourceService.findBy({ where: { is_active: true } })
+      if (!sources.length) {
+        this.logger.info("No sources for seeding")
+        return
+      }
 
       for (const targetSource of sources) {
         const isValidSource = await this.telegramService.validateSource(targetSource.id)
@@ -158,6 +156,23 @@ export class TelegramController {
     } catch (err) {
       const error = err as RPCError
       this.logger.error("Failed to seed users:", error)
+    }
+  }
+
+  async getDialogs() {
+    try {
+      const dialogs = await this.telegramService.getDialogs()
+      for await (const dialog of dialogs) {
+        if (!dialog.entity) continue
+        this.logger.info(
+          `Dialog: ${dialog.entity?.id?.toString()} ${dialog.title} - ${
+            // @ts-ignore
+            dialog.entity?.photo?.photoId
+          }`
+        )
+      }
+    } catch (err) {
+      this.logger.error("Failed to get dialogs:", err)
     }
   }
 }

@@ -31,6 +31,9 @@ export class SessionEntity {
   @Column({ type: "boolean", default: true, nullable: false })
   is_active: boolean
 
+  @Column({ type: "boolean" })
+  is_used: boolean
+
   @Column({ type: "timestamp with time zone", nullable: true })
   last_request_at: string
 

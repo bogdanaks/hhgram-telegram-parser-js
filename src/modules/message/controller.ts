@@ -69,6 +69,6 @@ export class MessageController {
 
     const logMsg = `[${source.id}] [${message.id}] Message saved as type ${preType}`
     this.logger.debug(logMsg)
-    this.redisService.sendMessage("info", logMsg)
+    this.redisService.sendMessage("debug", logMsg)
   }
 }

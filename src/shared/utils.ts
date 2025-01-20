@@ -1,7 +1,6 @@
 import assert from "assert"
 import { distance } from "fastest-levenshtein"
 import readline from "readline"
-import crypto from "crypto"
 
 export const checkEnv = (variable: string) => {
   assert(process.env[variable], `Env ${variable} undefined`)

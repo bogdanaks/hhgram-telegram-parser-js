@@ -43,7 +43,7 @@ export class RedisService {
         message,
       }
       await this.redis.publish(config.redis.loggerChannel, JSON.stringify(messageData))
-      this.logger.info(
+      this.logger.debug(
         `Published message to redis channel ${config.redis.loggerChannel}: ${message}`
       )
     } catch (err) {

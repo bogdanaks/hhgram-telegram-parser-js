@@ -20,6 +20,9 @@ export class SourceEntity {
   @Column({ type: "boolean" })
   is_active: boolean
 
+  @Column({ type: "boolean" })
+  is_seeded: boolean
+
   @CreateDateColumn()
   created_at: string
 

@@ -86,7 +86,11 @@ export class TelegramClientProvider {
   }
 
   public async initialize() {
-    this.sessions = await this.sessionService.findBy({ is_active: true })
+    this.sessions = await this.sessionService.findBy({
+      is_active: true,
+      is_used: false,
+      // phone: "573202010599",
+    })
 
     if (!this.sessions.length) {
       throw new Error("No active sessions found")

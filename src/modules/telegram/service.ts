@@ -37,7 +37,7 @@ export class TelegramService {
       this.logger.debug(`Fetching messages from Telegram API by ${sourceId}`)
       const sourceEntity = await this.getEntity(new Api.PeerChannel({ channelId: Big(sourceId) }))
       return this.telegramClientProvider.client.iterMessages(sourceEntity, {
-        offsetDate: offsetDate,
+        offsetDate,
         reverse: true,
         waitTime: 2,
       })
@@ -144,24 +144,13 @@ export class TelegramService {
     }
   }
 
-  public async checkLastOnlineUser(sourceId: string) {
-    // try {
-    //   this.logger.info(`Checking last online user from Telegram API`)
-    //   const sourceEntity = await this.getEntity(new Api.PeerChannel({ channelId: Big(sourceId) }))
-    //   if (!sourceEntity) {
-    //     throw new Error("Source not found")
-    //   }
-    //   return await this.telegramClientProvider.execute(async () => {
-    //     return await this.telegramClientProvider.client.getParticipants(sourceEntity, {
-    //       filter: new Api.ChannelParticipantsRecent(),
-    //       limit: 1,
-    //       offset: 0,
-    //       showTotal: true,
-    //     })
-    //   })
-    // } catch (err) {
-    //   this.logger.error("Failed to fetch participiants:", err)
-    //   throw err
-    // }
+  public async getDialogs() {
+    try {
+      this.logger.info(`Fetching dialogs from Telegram API`)
+      return this.telegramClientProvider.client.iterDialogs()
+    } catch (err) {
+      this.logger.error("Failed to fetch dialogs:", err)
+      throw err
+    }
   }
 }
