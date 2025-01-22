@@ -26,7 +26,7 @@ if (!fs.existsSync(sessionsDir)) {
 export class TelegramClientManager {
   public title: string
   private logger
-  private maxRequestCount = 1
+  private maxRequestCount = 200
 
   private sessionService
 
@@ -91,6 +91,11 @@ export class TelegramClientManager {
       config.telegram.apiHash,
       {
         connectionRetries: 3,
+        requestRetries: 3,
+        deviceModel: "Telegram Parser",
+        appVersion: "1.0.0",
+        systemVersion: "1.0.0",
+        langCode: "en",
       }
     ) as TelegramClientExtended
     this.client.setLogLevel(LogLevel.INFO)
@@ -134,8 +139,8 @@ export class TelegramClientManager {
   public async disconnect() {
     try {
       this.logger.info("Disconnecting from Telegram...")
-      await this.client.destroy()
       await this.client.disconnect()
+      await this.client.destroy()
       await this.updateSession(this.client.sessionEntity, { is_used: false })
       this.logger.info("Client successfully disconnected")
     } catch (err) {
