@@ -16,11 +16,11 @@ async function startApp() {
     await telegramClientMonitoring.initialize("monitoring")
     await telegramClientSeeder.initialize("seeder")
 
-    logger.info("App started")
     telegramController.monitoringMessages()
     redisService.subscribeOn("seed-source", (receivedChannel: string, sourceId: string) => {
       telegramController.seedDataBySourceId(sourceId)
     })
+    logger.info("App started")
   } catch (err) {
     logger.error("Failed to start app:", err)
     process.exit(1)

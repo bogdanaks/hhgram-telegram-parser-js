@@ -143,7 +143,7 @@ export class TelegramClientManager {
     }
   }
 
-  private async disconnect() {
+  public async disconnect() {
     try {
       this.logger.info("Disconnecting from Telegram...")
       await this.client.destroy()
