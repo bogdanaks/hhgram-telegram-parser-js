@@ -11,18 +11,6 @@ import { input } from "shared/utils"
 import { FloodWaitError, RPCError } from "telegram/errors"
 import { TelegramClientExtended } from "./types"
 
-/*
-Проверить можно ли сделать коннект сразу несколько аккаунтов
-
-Основные проблемы
-1. Нет возможности сидить и мониторить одновременно данные
-2. Не работает переключатель  сессии корректно, надо получать новую сессию из бд в момент переключения
-3. При перезагрузках или остановках происходят дыры в парсинге, надо сперва проходиться по каналам собирать пропуски, потом запускать подписку
-4. Менять подписки в реальном времени
-
-Запускать слушатель на редис канал, который будет принимать source id для сида, если он пришел, запускам сид с доступными клиентами из бд is_used=false
-*/
-
 interface Props {
   logger: Logger
   sessionService: SessionService
@@ -71,7 +59,7 @@ export class TelegramClientManager {
     const currentTime = dayjs()
     const hoursDifference = currentTime.diff(lastRequestTime, "hour")
 
-    if (hoursDifference > 1) {
+    if (hoursDifference > 24) {
       this.logger.info(
         `Resetting request count for session: [${session.session_name}] ${session.first_name}`
       )
@@ -226,6 +214,22 @@ export class TelegramClientManager {
       return await callback()
     } catch (err) {
       return this.handleExecuteError(err, callback)
+    }
+  }
+
+  public async _initSessionFiles() {
+    this.logger.info("Initializing session files...")
+    const sessions = await this.sessionService.findBy({ is_active: true })
+    const validSessions = await this.getValidSessions(sessions)
+
+    if (!validSessions.length) {
+      throw new Error("No active sessions found")
+    }
+
+    for (const session of validSessions) {
+      this.createClient(session)
+      await this.connect()
+      await this.disconnect()
     }
   }
 }

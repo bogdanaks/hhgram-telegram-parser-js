@@ -13,6 +13,7 @@ async function startApp() {
     logger.info("Database connected")
 
     await redisService.connect()
+
     await telegramClientMonitoring.initialize("monitoring")
     await telegramClientSeeder.initialize("seeder")
 
