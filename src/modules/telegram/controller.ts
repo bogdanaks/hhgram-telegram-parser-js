@@ -145,8 +145,10 @@ export class TelegramController {
 
         await this.messageController.handleNewMessage(this.telegramClientSeeder, message, source)
         counter++
-        await sleep(5000)
       }
+
+      await this.sourceService.update({ id: source.id, is_seeded: true })
+
       this.logger.info("Seeding data completed")
     } catch (err) {
       const error = err as RPCError
