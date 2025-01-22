@@ -6,6 +6,8 @@ import { MessageHandlerFactory } from "./factory"
 import { TgUserController } from "modules/tg-user"
 import dayjs from "dayjs"
 import { RedisService } from "shared/redis"
+import { TelegramClientExtended } from "modules/telegram/types"
+import { TelegramClientManager } from "modules/telegram/client-manager"
 
 interface Props {
   logger: Logger
@@ -30,7 +32,11 @@ export class MessageController {
     this.messageHandlerFactory = opts.messageHandlerFactory
   }
 
-  async handleNewMessage(message: Api.Message, source: SourceEntity) {
+  async handleNewMessage(
+    clientManager: TelegramClientManager,
+    message: Api.Message,
+    source: SourceEntity
+  ) {
     this.logger.debug(`[${source.id}] [${message.id}] New message received`)
 
     const findMessage = await this.messageService.findOne({
@@ -51,7 +57,7 @@ export class MessageController {
 
     const clearedMessage = handler.clearMessage(message)
     const preType = handler.getPreType(message)
-    const user = await this.tgUserController.processUser(message, source)
+    const user = await this.tgUserController.processUser(clientManager, message, source)
     const duplicateMessage = await this.messageService.findDuplicateOrigin(
       source.id,
       clearedMessage

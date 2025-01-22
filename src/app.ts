@@ -4,7 +4,8 @@ import { diContainer } from "shared/di-container"
 async function startApp() {
   const logger = diContainer.resolve("logger")
   try {
-    const telegramClientProvider = diContainer.resolve("telegramClientProvider")
+    const telegramClientMonitoring = diContainer.resolve("telegramClientMonitoring")
+    const telegramClientSeeder = diContainer.resolve("telegramClientSeeder")
     const telegramController = diContainer.resolve("telegramController")
     const redisService = diContainer.resolve("redisService")
 
@@ -12,10 +13,14 @@ async function startApp() {
     logger.info("Database connected")
 
     await redisService.connect()
-    await telegramClientProvider.initialize()
+    await telegramClientMonitoring.initialize("monitoring")
+    await telegramClientSeeder.initialize("seeder")
 
     logger.info("App started")
-    await telegramController.monitoringMessages()
+    telegramController.monitoringMessages()
+    redisService.subscribeOn("seed-source", (receivedChannel: string, sourceId: string) => {
+      telegramController.seedDataBySourceId(sourceId)
+    })
   } catch (err) {
     logger.error("Failed to start app:", err)
     process.exit(1)

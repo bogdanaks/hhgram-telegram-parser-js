@@ -2,7 +2,7 @@ import { Api } from "telegram"
 import { BaseMessageHandler, MessagePreType } from "../types"
 import { whiteMessageWords } from "config/white-words"
 
-export default abstract class DefaultMessageHandler implements BaseMessageHandler {
+export default class DefaultMessageHandler implements BaseMessageHandler {
   isValid(message: Api.Message) {
     return this.validateByWhiteList(message)
   }

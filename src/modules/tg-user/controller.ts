@@ -5,6 +5,8 @@ import { Logger } from "winston"
 import { MessageHandlerFactory } from "modules/message/factory"
 import { TgUserEntity } from "./entity"
 import { TelegramService } from "modules/telegram"
+import { TelegramClientExtended } from "modules/telegram/types"
+import { TelegramClientManager } from "modules/telegram/client-manager"
 
 interface TgUserControllerProps {
   logger: Logger
@@ -31,7 +33,11 @@ export class TgUserController {
     this.messageHandlerFactory = messageHandlerFactory
   }
 
-  async processUser(message: Api.Message, source: SourceEntity) {
+  async processUser(
+    clientManager: TelegramClientManager,
+    message: Api.Message,
+    source: SourceEntity
+  ) {
     let user: TgUserEntity | null = null
 
     if (message.fromId instanceof Api.PeerUser) {
@@ -39,7 +45,7 @@ export class TgUserController {
       if (findInMisc) {
         this.logger.warn(`[${source.id}] User (${message.fromId.userId.toString()}) found in misc`)
       } else {
-        user = await this.findOrFetchUser(message.fromId.userId.toString(), source)
+        user = await this.findOrFetchUser(clientManager, message.fromId.userId.toString(), source)
         if (!user) {
           await this.tgUserService.saveTgUserMiscExtraction(message.fromId.userId.toString())
         }
@@ -58,7 +64,7 @@ export class TgUserController {
         if (findInMisc) {
           this.logger.warn(`[${source.id}] User (${usernameLower}) found in misc`)
         } else {
-          user = await this.findOrFetchUser(usernameLower, source, true)
+          user = await this.findOrFetchUser(clientManager, usernameLower, source, true)
           if (!user) {
             await this.tgUserService.saveTgUserMiscExtraction(usernameLower)
           }
@@ -70,6 +76,7 @@ export class TgUserController {
   }
 
   private async findOrFetchUser(
+    clientManager: TelegramClientManager,
     identifier: string,
     source: SourceEntity,
     byUsername = false
@@ -80,7 +87,7 @@ export class TgUserController {
 
     if (!user) {
       this.logger.debug(`[${source.id}] User (${identifier}) not found in DB, fetching from API`)
-      const apiUser = await this.telegramService.getEntity(identifier)
+      const apiUser = await this.telegramService.getEntity(clientManager, identifier)
       if (apiUser && apiUser instanceof Api.User) {
         const savedUser = await this.tgUserService.saveTgUser({
           id: apiUser.id.toString(),

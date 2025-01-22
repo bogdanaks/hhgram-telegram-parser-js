@@ -35,35 +35,35 @@ if (!fs.existsSync(sessionsDir)) {
   fs.mkdirSync(sessionsDir, { recursive: true })
 }
 
-export class TelegramClientProvider {
+export class TelegramClientManager {
+  public title: string
   private logger
   private maxRequestCount = 1
 
   private sessionService
 
-  public monitoringClient: TelegramClientExtended
-  public seedingClient: TelegramClientExtended
+  public client: TelegramClientExtended
 
   constructor(opts: Props) {
     this.logger = opts.logger
     this.sessionService = opts.sessionService
   }
 
-  public async initialize() {
+  public async initialize(title: string) {
+    this.title = title
+    this.logger.info(`Initializing Telegram ${title} client...`)
     const sessions = await this.sessionService.findBy({
       is_active: true,
+      is_used: false,
     })
     const validSession = await this.getValidSessions(sessions)
 
-    if (validSession.length < 2) {
+    if (!validSession.length) {
       throw new Error("No active sessions found")
     }
 
-    this.monitoringClient = this.createClient(validSession[0])
-    this.seedingClient = this.createClient(validSession[1])
-
-    await this.connect(this.monitoringClient)
-    await this.connect(this.seedingClient)
+    this.client = this.createClient(validSession[0])
+    await this.connect()
   }
 
   private async validateSession(session: SessionEntity): Promise<boolean> {
@@ -97,7 +97,7 @@ export class TelegramClientProvider {
     this.logger.info(
       `Creating telegram client for session [${session.session_name}] ${session.first_name}`
     )
-    const client = new TelegramClient(
+    this.client = new TelegramClient(
       new StoreSession(`/sessions/${session.session_name}`),
       config.telegram.apiId,
       config.telegram.apiHash,
@@ -105,24 +105,24 @@ export class TelegramClientProvider {
         connectionRetries: 3,
       }
     ) as TelegramClientExtended
-    client.setLogLevel(LogLevel.INFO)
-    client.sessionEntity = session
-    return client
+    this.client.setLogLevel(LogLevel.INFO)
+    this.client.sessionEntity = session
+    return this.client
   }
 
-  private async connect(client: TelegramClientExtended) {
+  private async connect() {
     try {
       this.logger.info("Connecting to Telegram...")
 
-      const isUserAuthorized = await client.isUserAuthorized()
+      const isUserAuthorized = await this.client.isUserAuthorized()
       if (!isUserAuthorized) {
         const sessionPassword = this.sessionService.decryptPassword(
-          client.sessionEntity.password,
-          client.sessionEntity.password_iv
+          this.client.sessionEntity.password,
+          this.client.sessionEntity.password_iv
         )
 
-        await client.start({
-          phoneNumber: client.sessionEntity.phone,
+        await this.client.start({
+          phoneNumber: this.client.sessionEntity.phone,
           password: async () => sessionPassword,
           phoneCode: async () => await input("Please enter the code you received: "),
           forceSMS: false,
@@ -132,22 +132,22 @@ export class TelegramClientProvider {
         })
       }
 
-      await client.connect()
-      await this.updateSession(client.sessionEntity, { is_used: true })
+      await this.client.connect()
+      await this.updateSession(this.client.sessionEntity, { is_used: true })
       this.logger.info(
-        `Client [${client.sessionEntity.phone}] ${client.sessionEntity.first_name} successfully connected`
+        `Client [${this.client.sessionEntity.phone}] ${this.client.sessionEntity.first_name} successfully connected`
       )
     } catch (err) {
       this.logger.error("Failed to connect to Telegram:", err)
     }
   }
 
-  private async disconnect(client: TelegramClientExtended) {
+  private async disconnect() {
     try {
       this.logger.info("Disconnecting from Telegram...")
-      await client.destroy()
-      await client.disconnect()
-      await this.updateSession(client.sessionEntity, { is_used: false })
+      await this.client.destroy()
+      await this.client.disconnect()
+      await this.updateSession(this.client.sessionEntity, { is_used: false })
       this.logger.info("Client successfully disconnected")
     } catch (err) {
       this.logger.error("Failed to disconnect from Telegram:", err)
@@ -155,24 +155,20 @@ export class TelegramClientProvider {
     }
   }
 
-  private async handleExecuteError<T>(
-    client: TelegramClientExtended,
-    error: unknown,
-    callback: () => Promise<T>
-  ) {
+  private async handleExecuteError<T>(error: unknown, callback: () => Promise<T>) {
     const err = error as RPCError
 
     if (err instanceof FloodWaitError) {
       this.logger.warn("FloodWaitError: Switching client...")
-      await this.switchClient(client)
-      return this.execute(client, callback)
+      await this.switchClient()
+      return this.execute(callback)
     }
 
     this.logger.error("Error executing request:", err)
     throw err
   }
 
-  private async switchClient(client: TelegramClientExtended) {
+  private async switchClient() {
     const sessions = await this.sessionService.findBy({
       is_active: true,
       is_used: false,
@@ -182,37 +178,29 @@ export class TelegramClientProvider {
       throw new Error("No one valid sessions found")
     }
 
-    await this.disconnect(client)
+    await this.disconnect()
     const nextSession = validSessions[0]
-    const newClient = this.createClient(nextSession)
-
-    if (this.monitoringClient.sessionEntity.id === client.sessionEntity.id) {
-      this.monitoringClient = newClient
-    }
-
-    if (this.seedingClient.sessionEntity.id === client.sessionEntity.id) {
-      this.seedingClient = newClient
-    }
-
-    await this.connect(newClient)
+    this.createClient(nextSession)
+    await this.connect()
     this.logger.info(`Switched to client [${nextSession.session_name}] ${nextSession.first_name}`)
   }
 
-  private async checkSession(client: TelegramClientExtended) {
+  private async checkSession() {
     try {
-      const isValidActiveSession = await this.validateSession(client.sessionEntity)
+      const isValidActiveSession = await this.validateSession(this.client.sessionEntity)
       if (!isValidActiveSession) {
         this.logger.debug("Active session is not valid. Switching client...")
-        await this.switchClient(client)
+        await this.switchClient()
         return
       }
 
-      await this.updateSession(client.sessionEntity, {
-        request_count: client.sessionEntity.request_count + 1,
+      await this.updateSession(this.client.sessionEntity, {
+        request_count: this.client.sessionEntity.request_count + 1,
         last_request_at: dayjs().toISOString(),
       })
     } catch (err) {
       this.logger.error("Failed to check session:", err)
+      throw err
     }
   }
 
@@ -228,27 +216,15 @@ export class TelegramClientProvider {
     return validSessions
   }
 
-  public async executeMonitoring<T>(callback: () => Promise<T>): Promise<T> {
+  public async execute<T>(callback: () => Promise<T>): Promise<T> {
     try {
-      await this.checkSession(this.monitoringClient)
+      await this.checkSession()
       this.logger.debug(
-        `Executing request ${this.monitoringClient.sessionEntity.request_count} for session [${this.monitoringClient.sessionEntity.session_name}] ${this.monitoringClient.sessionEntity.first_name}`
+        `Executing request ${this.client.sessionEntity.request_count} for session [${this.client.sessionEntity.session_name}] ${this.client.sessionEntity.first_name}`
       )
       return await callback()
     } catch (err) {
-      return this.handleExecuteError(this.monitoringClient, err, callback)
-    }
-  }
-
-  public async executeSeeder<T>(callback: () => Promise<T>): Promise<T> {
-    try {
-      await this.checkSession(this.seedingClient)
-      this.logger.debug(
-        `Executing request ${this.seedingClient.sessionEntity.request_count} for session [${this.seedingClient.sessionEntity.session_name}] ${this.seedingClient.sessionEntity.first_name}`
-      )
-      return await callback()
-    } catch (err) {
-      return this.handleExecuteError(this.seedingClient, err, callback)
+      return this.handleExecuteError(err, callback)
     }
   }
 }

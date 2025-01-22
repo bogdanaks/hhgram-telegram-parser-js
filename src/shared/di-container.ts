@@ -10,6 +10,7 @@ import { MessageHandlerFactory } from "modules/message/factory"
 import { TgUserController, TgUserService } from "modules/tg-user"
 import { TelegramController, TelegramService, TelegramClientProvider } from "modules/telegram"
 import { SessionService } from "modules/tg-session"
+import { TelegramClientManager } from "modules/telegram/client-manager"
 
 interface AppDependencies {
   logger: Logger
@@ -24,7 +25,8 @@ interface AppDependencies {
   tgUserService: TgUserService
   telegramController: TelegramController
   telegramService: TelegramService
-  telegramClientProvider: TelegramClientProvider
+  telegramClientMonitoring: TelegramClientManager
+  telegramClientSeeder: TelegramClientManager
 }
 
 export const diContainer = createContainer<AppDependencies>()
@@ -42,5 +44,6 @@ diContainer.register({
   tgUserService: asClass(TgUserService).singleton(),
   telegramController: asClass(TelegramController).singleton(),
   telegramService: asClass(TelegramService).singleton(),
-  telegramClientProvider: asClass(TelegramClientProvider).singleton(),
+  telegramClientMonitoring: asClass(TelegramClientManager).singleton(),
+  telegramClientSeeder: asClass(TelegramClientManager).singleton(),
 })
