@@ -139,6 +139,7 @@ export class TelegramClientManager {
       )
     } catch (err) {
       this.logger.error("Failed to connect to Telegram:", err)
+      throw err
     }
   }
 
