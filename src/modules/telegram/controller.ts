@@ -148,6 +148,7 @@ export class TelegramController {
       }
 
       await this.sourceService.update({ id: source.id, is_seeded: true })
+      // await this.telegramClientSeeder.disconnect() // TODO надо реализовать чтобы is_used = false после сидинга делать
 
       this.logger.info("Seeding data completed")
     } catch (err) {
