@@ -14,6 +14,7 @@ async function startApp() {
 
     await redisService.connect()
 
+    await telegramClientMonitoring._unusedAll()
     await telegramClientMonitoring.initialize("monitoring")
     await telegramClientSeeder.initialize("seeder")
 

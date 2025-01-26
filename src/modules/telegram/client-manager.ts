@@ -37,6 +37,17 @@ export class TelegramClientManager {
     this.sessionService = opts.sessionService
   }
 
+  public async _unusedAll() {
+    const sessions = await this.sessionService.findBy({
+      is_active: true,
+      is_used: true,
+    })
+
+    for (const session of sessions) {
+      await this.updateSession(session, { is_used: false })
+    }
+  }
+
   public async initialize(title: string) {
     this.title = title
     this.logger.info(`Initializing Telegram ${title} client...`)
