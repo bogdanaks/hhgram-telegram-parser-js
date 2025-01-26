@@ -1,4 +1,5 @@
 import winston from "winston"
+import DailyRotateFile from "winston-daily-rotate-file"
 
 const customLevels = {
   levels: {
@@ -41,14 +42,18 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({
-      filename: "logs/error.log",
+    new DailyRotateFile({
+      filename: "logs/error-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
       level: "error",
       format: winston.format.combine(...formatCombine),
+      maxFiles: "14d",
     }),
-    new winston.transports.File({
-      filename: "logs/all.log",
+    new DailyRotateFile({
+      filename: "logs/all-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
       format: winston.format.combine(...formatCombine),
+      maxFiles: "14d",
     }),
   ],
 })

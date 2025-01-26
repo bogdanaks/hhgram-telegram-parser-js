@@ -22,7 +22,8 @@
     "pg": "^8.13.1",
     "telegram": "^2.26.16",
     "typeorm": "^0.3.20",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.6",
