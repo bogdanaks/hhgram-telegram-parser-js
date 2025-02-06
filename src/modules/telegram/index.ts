@@ -1,3 +1,3 @@
 export * from "./controller"
 export * from "./service"
-export * from "./client-provider"
+export * from "./client-manager"
